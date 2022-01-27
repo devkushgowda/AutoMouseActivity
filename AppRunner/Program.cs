@@ -24,7 +24,7 @@ namespace AppRunner
             }
 
             Console.WriteLine($"Started with [{min},{max}] minutes range.");
-
+            SetThreadExecutionState(EXECUTION_STATE.ES_DISPLAY_REQUIRED | EXECUTION_STATE.ES_CONTINUOUS);
             var clicksList = new List<List<MouseEventFlags>>{
                 new List<MouseEventFlags> {MouseEventFlags.RightDown,MouseEventFlags.RightUp ,MouseEventFlags.LeftDown, MouseEventFlags.LeftUp},
                 new List<MouseEventFlags> {MouseEventFlags.RightDown,MouseEventFlags.RightUp,MouseEventFlags.LeftDown, MouseEventFlags.LeftUp,MouseEventFlags.LeftDown, MouseEventFlags.LeftUp },
@@ -65,6 +65,20 @@ namespace AppRunner
             RightDown = 0x00000008,
             RightUp = 0x00000010
         }
+
+        [FlagsAttribute]
+        public enum EXECUTION_STATE : uint
+        {
+            ES_AWAYMODE_REQUIRED = 0x00000040,
+            ES_CONTINUOUS = 0x80000000,
+            ES_DISPLAY_REQUIRED = 0x00000002,
+            ES_SYSTEM_REQUIRED = 0x00000001
+            // Legacy flag, should not be used.
+            // ES_USER_PRESENT = 0x00000004
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern EXECUTION_STATE SetThreadExecutionState(EXECUTION_STATE esFlags);
 
         [DllImport("user32.dll", EntryPoint = "SetCursorPos")]
         [return: MarshalAs(UnmanagedType.Bool)]
