@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 using static AppRunner.MouseOperations;
 
 namespace AppRunner
@@ -13,43 +12,51 @@ namespace AppRunner
 
         static void Main(string[] args)
         {
-            uint min = 2, max = 4;
-            if (args != null && args.Length == 2)
+            try
             {
-                if (uint.TryParse(args[0], out uint newMin) && uint.TryParse(args[1], out uint newMax) && newMin < newMax)
+                uint min = 2, max = 4;
+                if (args != null && args.Length == 2)
                 {
-                    min = newMin;
-                    max = newMax;
+                    if (uint.TryParse(args[0], out uint newMin) && uint.TryParse(args[1], out uint newMax) &&
+                        newMin < newMax)
+                    {
+                        min = newMin;
+                        max = newMax;
+                    }
+                }
+
+                Console.WriteLine($"Started with [{min},{max}] minutes range.");
+                SetThreadExecutionState(EXECUTION_STATE.ES_DISPLAY_REQUIRED | EXECUTION_STATE.ES_CONTINUOUS);
+                var r = new Random();
+                while (true)
+                {
+                    var now = DateTime.Now;
+                    var nextDelayInSecs = r.Next((int)min * 60, (int)max * 60);
+                    Console.WriteLine($"Next move: {now.AddSeconds(nextDelayInSecs).ToString("MM/dd/yyyy HH:mm:ss")}");
+                    Thread.Sleep(nextDelayInSecs * 1000);
+                    var currentClicks = r.Next(1, 4);
+                    var w = Screen.PrimaryScreen.Bounds.Width;
+                    var wS = (w / 2);
+                    var wE = (w / 2) + (w / 3);
+                    var h = Screen.PrimaryScreen.Bounds.Height;
+                    var hS = (h / 2) - (h / 4);
+                    var hE = (h / 2) + (h / 4);
+                    var point = new Point(r.Next(wS, wE), r.Next(hS, hE));
+                    Console.WriteLine($"Current clicks count: {currentClicks}");
+                    for (var i = 0; i < currentClicks; ++i)
+                    {
+                        var mp = new MousePoint(point.X + i, point.Y + i);
+                        SetCursorPosition(mp);
+                        Click(MouseEventFlags.LeftDown, mp);
+                        Click(MouseEventFlags.LeftUp, mp);
+                        Thread.Sleep(100);
+                    }
                 }
             }
-
-            Console.WriteLine($"Started with [{min},{max}] minutes range.");
-            SetThreadExecutionState(EXECUTION_STATE.ES_DISPLAY_REQUIRED | EXECUTION_STATE.ES_CONTINUOUS);
-            var clicksList = new List<List<MouseEventFlags>>{
-                new List<MouseEventFlags> {MouseEventFlags.RightDown,MouseEventFlags.RightUp ,MouseEventFlags.LeftDown, MouseEventFlags.LeftUp},
-                new List<MouseEventFlags> {MouseEventFlags.RightDown,MouseEventFlags.RightUp,MouseEventFlags.LeftDown, MouseEventFlags.LeftUp,MouseEventFlags.LeftDown, MouseEventFlags.LeftUp },
-                new List<MouseEventFlags> {MouseEventFlags.LeftDown, MouseEventFlags.LeftUp},
-            };
-            var r = new Random();
-            while (true)
+            catch (Exception e)
             {
-                var now = DateTime.Now;
-                var nextDelay = r.Next((int)min * 60, (int)max * 60);
-                Console.WriteLine($"Next move: {now.AddSeconds(nextDelay).ToString("MM/dd/yyyy HH:mm:ss")}");
-                Thread.Sleep(nextDelay * 1000);
-                var currentClicks = clicksList[r.Next(0, clicksList.Count)];
-                var w = Screen.PrimaryScreen.Bounds.Width;
-                var wS = (w / 2) - (w / 4);
-                var wE = (w / 2) + (w / 4);
-                var h = Screen.PrimaryScreen.Bounds.Height;
-                var hS = (h / 2) - (h / 4);
-                var hE = (h / 2) + (h / 4);
-                var point = new Point(r.Next(wS, wE), r.Next(hS, hE));
-                currentClicks.ForEach(c =>
-                {
-                    Console.WriteLine(Enum.GetName(c.GetType(), c));
-                    Click(c, new MousePoint(point));
-                });
+                Console.WriteLine($"Error occured: {e}");
+                Console.WriteLine($"Retry again.");
             }
         }
     }
@@ -73,8 +80,6 @@ namespace AppRunner
             ES_CONTINUOUS = 0x80000000,
             ES_DISPLAY_REQUIRED = 0x00000002,
             ES_SYSTEM_REQUIRED = 0x00000001
-            // Legacy flag, should not be used.
-            // ES_USER_PRESENT = 0x00000004
         }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
